@@ -62,3 +62,11 @@ CREATE TABLE IF NOT EXISTS results (
     FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE,
     UNIQUE KEY unique_attempt (student_id, competition_id)
 );
+
+-- Performance Indexes for handling 1000+ concurrent users
+-- These prevent full table scans during login, registration, and quiz access
+CREATE INDEX idx_students_unique_id ON students(unique_id);
+CREATE INDEX idx_students_comp_reg ON students(competition_id, reg_no);
+CREATE INDEX idx_results_student ON results(student_id);
+CREATE INDEX idx_results_comp_score ON results(competition_id, score, time_taken_seconds);
+CREATE INDEX idx_competitions_status ON competitions(status, start_time, end_time);
