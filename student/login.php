@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
 
     // Fetch student along with their competition details
-    $stmt = $conn->prepare("SELECT s.id, s.name, s.competition_id, c.name as comp_name, c.end_time, c.status 
+    $stmt = $conn->prepare("SELECT s.id, s.name, s.password, s.competition_id, c.name as comp_name, c.end_time, c.status 
                             FROM students s 
                             JOIN competitions c ON s.competition_id = c.id 
                             WHERE s.unique_id = ?");
