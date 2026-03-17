@@ -39,7 +39,8 @@ $questions = $q_stmt->get_result();
 
 while ($q = $questions->fetch_assoc()) {
     $q_key = 'q_' . $q['id'];
-        // Scoring: 1 mark given per correct answer as per requirement
+    if (isset($_POST[$q_key]) && $_POST[$q_key] === $q['correct_option']) {
+        // Scoring: 1 mark given per correct answer
         $score += 1; 
     }
 }
