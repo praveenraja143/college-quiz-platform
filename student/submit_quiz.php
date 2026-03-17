@@ -29,30 +29,40 @@ $session_time_key = "start_time_" . $comp_id;
 $start_time = $_SESSION[$session_time_key] ?? time();
 $time_taken = time() - $start_time;
 
-// Calculate Score
+// Calculate Score with correct/wrong tracking
 $score = 0;
+$correct_count = 0;
+$wrong_count = 0;
 
 $q_stmt = $conn->prepare("SELECT id, correct_option FROM questions WHERE competition_id = ?");
 $q_stmt->bind_param("i", $comp_id);
 $q_stmt->execute();
 $questions = $q_stmt->get_result();
 
+$total_questions = 0;
 while ($q = $questions->fetch_assoc()) {
+    $total_questions++;
     $q_key = 'q_' . $q['id'];
-    if (isset($_POST[$q_key]) && $_POST[$q_key] === $q['correct_option']) {
-        // Scoring: 1 mark given per correct answer
-        $score += 1; 
+    if (isset($_POST[$q_key]) && $_POST[$q_key] !== '') {
+        if ($_POST[$q_key] === $q['correct_option']) {
+            $score += 1;
+            $correct_count++;
+        } else {
+            $wrong_count++;
+        }
     }
+    // If not set = unanswered, not counted as wrong
 }
 $q_stmt->close();
 
 // Penalize if violation occurred: force score to 0
 if ($violation) {
     $score = 0;
+    $correct_count = 0;
 }
 
-$insert = $conn->prepare("INSERT INTO results (student_id, competition_id, score, time_taken_seconds, violation) VALUES (?, ?, ?, ?, ?)");
-$insert->bind_param("iiiii", $student_id, $comp_id, $score, $time_taken, $violation);
+$insert = $conn->prepare("INSERT INTO results (student_id, competition_id, score, correct_count, wrong_count, time_taken_seconds, violation) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$insert->bind_param("iiiiiii", $student_id, $comp_id, $score, $correct_count, $wrong_count, $time_taken, $violation);
 $insert->execute();
 
 // Clear the session start time

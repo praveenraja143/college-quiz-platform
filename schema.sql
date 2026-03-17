@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS results (
     student_id INT NOT NULL,
     competition_id INT NOT NULL,
     score INT NOT NULL DEFAULT 0,
+    correct_count INT NOT NULL DEFAULT 0,
+    wrong_count INT NOT NULL DEFAULT 0,
     time_taken_seconds INT NOT NULL DEFAULT 0,
     violation TINYINT(1) NOT NULL DEFAULT 0,
     completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
