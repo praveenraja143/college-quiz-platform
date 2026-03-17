@@ -11,15 +11,12 @@ if (!isset($_GET['comp_id']) || !is_numeric($_GET['comp_id'])) {
 }
 $comp_id = $_GET['comp_id'];
 $student_id = $_SESSION['student_id'];
+$session_comp_id = $_SESSION['student_comp_id'] ?? 0;
 
-// New Requirement: Global check to ensure credentials are used only for ONE competition
-$check_consumed = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
-$check_consumed->bind_param("i", $student_id);
-$check_consumed->execute();
-if ($check_consumed->get_result()->num_rows > 0) {
-    die("Your credentials for this session have already been consumed. One-time participation limit reached.");
+// Ensure student can only access the competition they registered for
+if ($comp_id != $session_comp_id) {
+    die("You are not registered for this competition.");
 }
-$check_consumed->close();
 
 // Check Competition Status
 $comp_stmt = $conn->prepare("SELECT * FROM competitions WHERE id = ?");
@@ -37,7 +34,7 @@ if ($competition['status'] != 'active' || $now < $start || $now > $end) {
     die("This competition is not currently active.");
 }
 
-// Check if already attempted
+// Check if already attempted THIS competition
 $attempt_stmt = $conn->prepare("SELECT id FROM results WHERE student_id = ? AND competition_id = ?");
 $attempt_stmt->bind_param("ii", $student_id, $comp_id);
 $attempt_stmt->execute();
@@ -141,7 +138,7 @@ if ($time_remaining <= 0) {
             <?php 
             $q_num++;
             endwhile; 
-            if($questions->num_rows == 0) echo "<p style='text-align:center;'>No questions strictly assigned for this competition yet.</p>";
+            if($questions->num_rows == 0) echo "<p style='text-align:center;'>No questions assigned for this competition yet.</p>";
             ?>
             
             <button type="button" class="btn-submit" onclick="confirmSubmit()">Submit Examination</button>
@@ -160,16 +157,13 @@ if ($time_remaining <= 0) {
                 form.submit();
                 return;
             }
-            
             let h = Math.floor(timeRemaining / 3600);
             let m = Math.floor((timeRemaining % 3600) / 60);
             let s = timeRemaining % 60;
-            
             timerDisplay.textContent = 
                 (h < 10 ? "0"+h : h) + ":" + 
                 (m < 10 ? "0"+m : m) + ":" + 
                 (s < 10 ? "0"+s : s);
-                
             timeRemaining--;
         }
         setInterval(updateTimer, 1000);
@@ -182,8 +176,8 @@ if ($time_remaining <= 0) {
             if(submitted) return;
             submitted = true;
             document.getElementById('overlay-warning').style.display = 'flex';
-            document.getElementById('violationInput').value = "1"; // Allows server to know it was a forced submit
-            setTimeout(() => { form.submit(); }, 2000); // Wait 2s to let them read the warning
+            document.getElementById('violationInput').value = "1";
+            setTimeout(() => { form.submit(); }, 2000);
         }
 
         function confirmSubmit() {
@@ -193,23 +187,11 @@ if ($time_remaining <= 0) {
             }
         }
 
-        // 1. Detect Tab Switch or Window Minimize
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                forceSubmit("Tab switch detected");
-            }
+            if (document.hidden) { forceSubmit("Tab switch detected"); }
         });
-        window.addEventListener('blur', () => {
-            forceSubmit("Window lost focus");
-        });
-
-        // 2. Detect Keyboard Presses (Auto-submit on ANY keypress)
-        document.addEventListener('keydown', (e) => {
-            e.preventDefault();
-            forceSubmit("Keyboard usage detected");
-        });
-        
-        // Disable Right Click & text selection (already handled by CSS and body attributes)
+        window.addEventListener('blur', () => { forceSubmit("Window lost focus"); });
+        document.addEventListener('keydown', (e) => { e.preventDefault(); forceSubmit("Keyboard usage detected"); });
     </script>
 </body>
 </html>

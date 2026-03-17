@@ -8,11 +8,8 @@ CREATE TABLE IF NOT EXISTS admins (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default admin (username: admin, password: admin_password)
--- In production, password should be hashed. Here we use plaintext for simplicity of initial setup, or we can use md5/bcrypt.
--- Let's use MD5 of 'admin123' -> 0192023a7bbd73250516f069df18b500 for demonstration, or PHP's password_hash.
--- We'll just use a plain insert and handle login via matching (or better, setup a script to create users).
-INSERT IGNORE INTO admins (username, password) VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'); -- password is 'password'
+-- Insert default admin (username: admin, password: password)
+INSERT IGNORE INTO admins (username, password) VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
 CREATE TABLE IF NOT EXISTS competitions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -23,16 +20,20 @@ CREATE TABLE IF NOT EXISTS competitions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Students are registered PER competition. Same person can register for multiple competitions.
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    competition_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     department VARCHAR(100) NOT NULL,
     year VARCHAR(20) NOT NULL,
-    reg_no VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    reg_no VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
     unique_id VARCHAR(50) UNIQUE,
     password VARCHAR(255),
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_per_comp (reg_no, competition_id)
 );
 
 CREATE TABLE IF NOT EXISTS questions (

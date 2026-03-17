@@ -12,7 +12,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $unique_id = sanitize_input($_POST['unique_id']);
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT id, name, password FROM students WHERE unique_id = ?");
+    // Fetch student along with their competition details
+    $stmt = $conn->prepare("SELECT s.id, s.name, s.competition_id, c.name as comp_name, c.end_time, c.status 
+                            FROM students s 
+                            JOIN competitions c ON s.competition_id = c.id 
+                            WHERE s.unique_id = ?");
     $stmt->bind_param("s", $unique_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -20,17 +24,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows == 1) {
         $row = $result->fetch_assoc();
         if (password_verify($password, $row['password'])) {
-            // New Requirement: Check if this user has ALREADY participated in ANY competition
-            $check_used = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
-            $check_used->bind_param("i", $row['id']);
-            $check_used->execute();
-            if ($check_used->get_result()->num_rows > 0) {
-                $error = "This Unique ID has already been used for a competition and is no longer valid.";
+            // Check if competition has ended
+            $now = new DateTime();
+            $end = new DateTime($row['end_time']);
+            if ($row['status'] == 'completed' || $now > $end) {
+                $error = "The competition <strong>" . htmlspecialchars($row['comp_name']) . "</strong> has ended. These credentials are no longer valid.";
             } else {
-                $_SESSION['student_id'] = $row['id'];
-                $_SESSION['student_name'] = $row['name'];
-                header("Location: wait_room.php");
-                exit();
+                // Check if already attempted THIS competition
+                $check_used = $conn->prepare("SELECT id FROM results WHERE student_id = ? AND competition_id = ?");
+                $check_used->bind_param("ii", $row['id'], $row['competition_id']);
+                $check_used->execute();
+                if ($check_used->get_result()->num_rows > 0) {
+                    $error = "You have already completed <strong>" . htmlspecialchars($row['comp_name']) . "</strong>. This ID is no longer valid.";
+                } else {
+                    $_SESSION['student_id'] = $row['id'];
+                    $_SESSION['student_name'] = $row['name'];
+                    $_SESSION['student_comp_id'] = $row['competition_id'];
+                    $_SESSION['student_comp_name'] = $row['comp_name'];
+                    header("Location: wait_room.php");
+                    exit();
+                }
             }
         } else {
             $error = "Invalid Unique ID or Password.";
@@ -57,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .input-group input { width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 4px; box-sizing: border-box; }
         .btn { width: 100%; padding: 0.75rem; background-color: #4F46E5; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; font-size: 1rem; }
         .btn:hover { background-color: #4338CA; }
-        .error { color: #DC2626; text-align: center; margin-bottom: 1rem; font-size: 0.875rem; padding: 0.5rem; background: #FEE2E2; border-radius: 4px; }
+        .error { color: #DC2626; text-align: center; margin-bottom: 1rem; font-size: 0.875rem; padding: 0.75rem; background: #FEE2E2; border-radius: 4px; }
         .links { margin-top: 1.5rem; text-align: center; font-size: 0.875rem; }
         .links a { color: #4F46E5; text-decoration: none; }
         .links a:hover { text-decoration: underline; }
@@ -73,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <form method="POST" action="">
             <div class="input-group">
                 <label>Unique ID</label>
-                <input type="text" name="unique_id" required placeholder="e.g. JKKMCT123" autocomplete="off">
+                <input type="text" name="unique_id" required placeholder="e.g. JKKAB12C3" autocomplete="off">
             </div>
             <div class="input-group">
                 <label>Password</label>
