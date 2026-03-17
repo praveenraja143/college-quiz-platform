@@ -20,10 +20,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows == 1) {
         $row = $result->fetch_assoc();
         if (password_verify($password, $row['password'])) {
-            $_SESSION['student_id'] = $row['id'];
-            $_SESSION['student_name'] = $row['name'];
-            header("Location: wait_room.php");
-            exit();
+            // New Requirement: Check if this user has ALREADY participated in ANY competition
+            $check_used = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
+            $check_used->bind_param("i", $row['id']);
+            $check_used->execute();
+            if ($check_used->get_result()->num_rows > 0) {
+                $error = "This Unique ID has already been used for a competition and is no longer valid.";
+            } else {
+                $_SESSION['student_id'] = $row['id'];
+                $_SESSION['student_name'] = $row['name'];
+                header("Location: wait_room.php");
+                exit();
+            }
         } else {
             $error = "Invalid Unique ID or Password.";
         }

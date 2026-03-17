@@ -8,6 +8,17 @@ require_once '../config.php';
 
 $student_id = $_SESSION['student_id'];
 
+// New Requirement: Check if this user has ALREADY participated in ANY competition
+$check_global = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
+$check_global->bind_param("i", $student_id);
+$check_global->execute();
+if ($check_global->get_result()->num_rows > 0) {
+    // Already used their one-time opportunity
+    header("Location: logout.php");
+    exit();
+}
+$check_global->close();
+
 // Get Candidate Details
 $stmt = $conn->prepare("SELECT * FROM students WHERE id = ?");
 $stmt->bind_param("i", $student_id);

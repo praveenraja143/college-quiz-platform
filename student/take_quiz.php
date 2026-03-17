@@ -12,6 +12,15 @@ if (!isset($_GET['comp_id']) || !is_numeric($_GET['comp_id'])) {
 $comp_id = $_GET['comp_id'];
 $student_id = $_SESSION['student_id'];
 
+// New Requirement: Global check to ensure credentials are used only for ONE competition
+$check_consumed = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
+$check_consumed->bind_param("i", $student_id);
+$check_consumed->execute();
+if ($check_consumed->get_result()->num_rows > 0) {
+    die("Your credentials for this session have already been consumed. One-time participation limit reached.");
+}
+$check_consumed->close();
+
 // Check Competition Status
 $comp_stmt = $conn->prepare("SELECT * FROM competitions WHERE id = ?");
 $comp_stmt->bind_param("i", $comp_id);
