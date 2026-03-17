@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS results (
     competition_id INT NOT NULL,
     score INT NOT NULL DEFAULT 0,
     time_taken_seconds INT NOT NULL DEFAULT 0,
+    violation TINYINT(1) NOT NULL DEFAULT 0,
     completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
     FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE,

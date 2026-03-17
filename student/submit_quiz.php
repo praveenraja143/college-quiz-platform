@@ -46,11 +46,13 @@ while ($q = $questions->fetch_assoc()) {
 }
 $q_stmt->close();
 
-// Penalize if violation occurred (Optional: zero score if cheated, or just record it. System asks for auto-submit. I will record the score they had but just submit whatever they had selected)
-// We'll leave the score as calculated up to the point of violation.
+// Penalize if violation occurred: force score to 0
+if ($violation) {
+    $score = 0;
+}
 
-$insert = $conn->prepare("INSERT INTO results (student_id, competition_id, score, time_taken_seconds) VALUES (?, ?, ?, ?)");
-$insert->bind_param("iiii", $student_id, $comp_id, $score, $time_taken);
+$insert = $conn->prepare("INSERT INTO results (student_id, competition_id, score, time_taken_seconds, violation) VALUES (?, ?, ?, ?, ?)");
+$insert->bind_param("iiiii", $student_id, $comp_id, $score, $time_taken, $violation);
 $insert->execute();
 
 // Clear the session start time

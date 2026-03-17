@@ -19,7 +19,7 @@ if (isset($_GET['download']) && is_numeric($_GET['download'])) {
     $comp_name = $comp_res->fetch_assoc()['name'];
 
     // Get Results
-    $sql = "SELECT s.name, s.reg_no, s.department, s.year, r.score, r.time_taken_seconds 
+    $sql = "SELECT s.name, s.reg_no, s.department, s.year, r.score, r.time_taken_seconds, r.violation 
             FROM results r 
             JOIN students s ON r.student_id = s.id 
             WHERE r.competition_id = ? 
@@ -40,7 +40,7 @@ if (isset($_GET['download']) && is_numeric($_GET['download'])) {
     fputcsv($output, array('')); // Empty spacer row
 
     // Table Headers
-    fputcsv($output, array('Rank', 'Name', 'Register Number', 'Department', 'Year', 'Marks', 'Time Taken (Seconds)'));
+    fputcsv($output, array('Rank', 'Name', 'Register Number', 'Department', 'Year', 'Marks', 'Time Taken (Seconds)', 'Status'));
 
     $rank = 1;
     $prev_score = -1;
@@ -54,6 +54,9 @@ if (isset($_GET['download']) && is_numeric($_GET['download'])) {
             }
         }
         
+        // Determine status text
+        $status = $row['violation'] ? 'Auto Exit (Keyboard/Tab Violation)' : 'Completed Normally';
+        
         // Output row directly to csv
         fputcsv($output, array(
             $rank,
@@ -62,7 +65,8 @@ if (isset($_GET['download']) && is_numeric($_GET['download'])) {
             $row['department'],
             $row['year'],
             $row['score'],
-            $row['time_taken_seconds']
+            $row['time_taken_seconds'],
+            $status
         ));
 
         $prev_score = $row['score'];
